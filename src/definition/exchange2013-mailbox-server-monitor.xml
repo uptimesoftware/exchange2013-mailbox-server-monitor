@@ -33,7 +33,7 @@
 				<integer />
 			</gui_type>
 		</element>
-		
+
 		<element name="domainName" parameter_type="input" data_type="string" gui_basic="1" range_type="0" units="">
 			<control_options>size:40</control_options>
 			<default_value>.\</default_value>
@@ -66,7 +66,8 @@
 			<control_options>size:10</control_options>
 			<default_value></default_value>
 			<short_description>Password</short_description>
-			<long_description>On Windows monitoring station, the password is for the user on the Exchange server. On Linux monitoring station, the password is for up.time Agent on the Exchange server.</long_description>
+			<long_description>On Windows monitoring station, the password is for the user on the Exchange server. On Linux
+				monitoring station, the password is for up.time Agent on the Exchange server.</long_description>
 			<validation_rule>
 				<alphanumeric />
 			</validation_rule>
