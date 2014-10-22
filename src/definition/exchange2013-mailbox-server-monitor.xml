@@ -12,27 +12,10 @@
 		<supported_versions>7.3</supported_versions>
 		<supported_platforms>windows, linux</supported_platforms>
 		<upgrade_in_place>true</upgrade_in_place>
-		<requires_agent_scripts>false</requires_agent_scripts>
+		<requires_agent_scripts>true</requires_agent_scripts>
 	</grid_info>
 
 	<elements>
-
-		<element name="domainName" parameter_type="input" data_type="string" gui_basic="1" range_type="0" units="">
-			<control_options>size:40</control_options>
-			<default_value>.\</default_value>
-			<short_description>Domain</short_description>
-			<long_description> (Only for Windows monitoring station) Enter domain name.
-			</long_description>
-			<validation_rule>
-				<alphanumeric />
-			</validation_rule>
-			<error_message>
-				<alphanumeric>required field</alphanumeric>
-			</error_message>
-			<gui_type>
-				<string />
-			</gui_type>
-		</element>
 
 		<element name="port" parameter_type="input" data_type="integer" gui_basic="1" range_type="0" units="">
 			<control_options>size:10</control_options>
@@ -50,13 +33,28 @@
 				<integer />
 			</gui_type>
 		</element>
+		
+		<element name="domainName" parameter_type="input" data_type="string" gui_basic="1" range_type="0" units="">
+			<control_options>size:40</control_options>
+			<default_value>.\</default_value>
+			<short_description>Domain</short_description>
+			<long_description>(Only for Windows monitoring station) Enter domain name for the Exchange server.</long_description>
+			<validation_rule>
+				<alphanumeric />
+			</validation_rule>
+			<error_message>
+				<alphanumeric>required field</alphanumeric>
+			</error_message>
+			<gui_type>
+				<string />
+			</gui_type>
+		</element>
 
 		<element name="userName" parameter_type="input" data_type="string" gui_basic="1" range_type="0" units="">
 			<control_options>size:40</control_options>
 			<default_value></default_value>
 			<short_description>Username</short_description>
-			<long_description> (Only for Windows monitoring station) Enter User/Administrator name.
-			</long_description>
+			<long_description>(Only for Windows monitoring station) Enter username for the Exchange server.</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -68,9 +66,7 @@
 			<control_options>size:10</control_options>
 			<default_value></default_value>
 			<short_description>Password</short_description>
-			<long_description>On Windows monitoring station, the password is for running a remote Powershell script. On Linux
-				monitoring station, the password is for up.time Agent on a remote Windows host.
-			</long_description>
+			<long_description>On Windows monitoring station, the password is for the user on the Exchange server. On Linux monitoring station, the password is for up.time Agent on the Exchange server.</long_description>
 			<validation_rule>
 				<alphanumeric />
 			</validation_rule>
@@ -86,8 +82,8 @@
 			gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchange Assistants - Per Database - Events In Queue</short_description>
-			<long_description>MSExchange Assistants - Per Database - Events In Queue</long_description>
+			<short_description>Events In Queue</short_description>
+			<long_description>Events In Queue</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -99,8 +95,8 @@
 			gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchange Delivery SmtpAvailability - % Availability</short_description>
-			<long_description>MSExchange Delivery SmtpAvailability - % Availability</long_description>
+			<short_description>SMTP %Availability</short_description>
+			<long_description>SMTP %Availability</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -112,7 +108,7 @@
 			data_type="integer" gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchange Delivery SmtpAvailability - % Failures Due To Back Pressure</short_description>
+			<short_description>SMTP % Failures Due To Back Pressure</short_description>
 			<long_description>
 				Back Pressure : http://technet.microsoft.com/en-us/library/bb201658(v=exchg.150).aspx
 			</long_description>
@@ -127,8 +123,8 @@
 			data_type="integer" gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchange Delivery SmtpAvailability - % Failures Due To TLS Errors</short_description>
-			<long_description>MSExchange Delivery SmtpAvailability - % Failures Due To TLS Errors</long_description>
+			<short_description>SMTP % Failures Due To TLS Errors</short_description>
+			<long_description>SMTP % Failures Due To TLS Errors</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -140,9 +136,8 @@
 			parameter_type="output" data_type="integer" gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchange Delivery SmtpAvailability - Failures Due to Maximum Local Loop Count
-			</short_description>
-			<long_description>MSExchange Delivery SmtpAvailability - Failures Due to Maximum Local Loop Count</long_description>
+			<short_description>SMTP Failures Due to Maximum Local Loop Count</short_description>
+			<long_description>SMTP Failures Due to Maximum Local Loop Count</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -154,8 +149,8 @@
 			gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchange RpcClientAccess - Connection Count</short_description>
-			<long_description>MSExchange RpcClientAccess - Connection Count</long_description>
+			<short_description>RPC Connection Count</short_description>
+			<long_description>RPC Connection Count</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -167,8 +162,8 @@
 			gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchange RpcClientAccess - Active User Count</short_description>
-			<long_description>MSExchange RpcClientAccess - Active User Count</long_description>
+			<short_description>RPC Active User Count</short_description>
+			<long_description>RPC Active User Count</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -180,8 +175,8 @@
 			range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchange RpcClientAccess - User Count</short_description>
-			<long_description>MSExchange RpcClientAccess - User Count</long_description>
+			<short_description>RPC User Count</short_description>
+			<long_description>RPC User Count</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -193,8 +188,8 @@
 			gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchange RpcClientAccess - RPC Dispatch Task Queue Length</short_description>
-			<long_description>MSExchange RpcClientAccess - RPC Dispatch Task Queue Length</long_description>
+			<short_description>RPC Dispatch Task Queue Length</short_description>
+			<long_description>RPC Dispatch Task Queue Length</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -206,8 +201,8 @@
 			gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchange RpcClientAccess - XTC Dispatch Task Queue Length</short_description>
-			<long_description>MSExchange RpcClientAccess - XTC Dispatch Task Queue Length</long_description>
+			<short_description>XTC Dispatch Task Queue Length</short_description>
+			<long_description>XTC Dispatch Task Queue Length</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -219,10 +214,8 @@
 			parameter_type="output" data_type="integer" gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchange RpcClientAccess - RPCHttpConnectionRegistration Dispatch Task Queue Length
-			</short_description>
-			<long_description>MSExchange RpcClientAccess - RPCHttpConnectionRegistration Dispatch Task Queue Length
-			</long_description>
+			<short_description>RPC HTTP Connection Registration Dispatch Task Queue Length</short_description>
+			<long_description>RPC HTTP Connection Registration Dispatch Task Queue Length</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -234,8 +227,8 @@
 			data_type="integer" gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchangeTransport Queues - Active Mailbox Delivery Queue Length</short_description>
-			<long_description>MSExchangeTransport Queues - Active Mailbox Delivery Queue Length</long_description>
+			<short_description>Active Mailbox Delivery Queue Length</short_description>
+			<long_description>Active Mailbox Delivery Queue Length</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -247,8 +240,8 @@
 			gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchangeTransport Queues - Submission Queue Length</short_description>
-			<long_description>MSExchangeTransport Queues - Submission Queue Length</long_description>
+			<short_description>Submission Queue Length</short_description>
+			<long_description>Submission Queue Length</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -260,8 +253,8 @@
 			data_type="integer" gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchangeTransport Queues - Active Non-Smtp Delivery Queue Length</short_description>
-			<long_description>MSExchangeTransport Queues - Active Non-Smtp Delivery Queue Length</long_description>
+			<short_description>Active Non-SMTP Delivery Queue Length</short_description>
+			<long_description>Active Non-SMTP Delivery Queue Length</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -273,8 +266,8 @@
 			data_type="integer" gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchangeTransport Queues - Retry Mailbox Delivery Queue Length</short_description>
-			<long_description>MSExchangeTransport Queues - Retry Mailbox Delivery Queue Length</long_description>
+			<short_description>Retry Mailbox Delivery Queue Length</short_description>
+			<long_description>Retry Mailbox Delivery Queue Length</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -286,8 +279,8 @@
 			gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchangeTransport Queues - Unreachable Queue Length</short_description>
-			<long_description>MSExchangeTransport Queues - Unreachable Queue Length</long_description>
+			<short_description>Unreachable Queue Length</short_description>
+			<long_description>Unreachable Queue Length</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -299,8 +292,8 @@
 			gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchangeTransport Queues - Poison Queue Length</short_description>
-			<long_description>MSExchangeTransport Queues - Poison Queue Length</long_description>
+			<short_description>Poison Queue Length</short_description>
+			<long_description>Poison Queue Length</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -312,8 +305,8 @@
 			data_type="integer" gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchangeTransport Queues - Messages Queued for Delivery Per Second</short_description>
-			<long_description>MSExchangeTransport Queues - Messages Queued for Delivery Per Second</long_description>
+			<short_description>Messages Queued for Delivery Per Second</short_description>
+			<long_description>Messages Queued for Delivery Per Second</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -325,8 +318,8 @@
 			data_type="integer" gui_basic="1" range_type="0">
 			<control_options>size:40</control_options>
 			<default_value />
-			<short_description>MSExchangeTransport Queues - Retry Non-SMTP Delivery Queue Length</short_description>
-			<long_description>MSExchangeTransport Queues - Retry Non-SMTP Delivery Queue Length</long_description>
+			<short_description>Retry Non-SMTP Delivery Queue Length</short_description>
+			<long_description>Retry Non-SMTP Delivery Queue Length</long_description>
 			<validation_rule />
 			<error_message />
 			<gui_type>
@@ -348,5 +341,5 @@
 
 	</elements>
 
-	<help>Get Exchange2013 Mailbox Server performance counters and return the results to Up.time</help>
+	<help>Gather performance counters from Exchange 2013 Mailbox Server.</help>
 </uptime>
