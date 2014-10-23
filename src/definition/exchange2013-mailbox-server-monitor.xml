@@ -21,8 +21,7 @@
 			<control_options>size:10</control_options>
 			<default_value>9998</default_value>
 			<short_description>Agent Port</short_description>
-			<long_description>(Only for Linux monitoring station) Enter the port that up.time Agent is listening on.
-			</long_description>
+			<long_description>(Only for Linux monitoring station) Enter the port for the agent running on the Exchange server.</long_description>
 			<validation_rule>
 				<alphanumeric />
 			</validation_rule>
@@ -31,6 +30,22 @@
 			</error_message>
 			<gui_type>
 				<integer />
+			</gui_type>
+		</element>
+		
+		<element name="agentPassword" parameter_type="input" data_type="string" gui_basic="1" range_type="0" units="">
+			<control_options>size:10</control_options>
+			<default_value></default_value>
+			<short_description>Agent Password</short_description>
+			<long_description>(Only for Linux monitoring station) Enter the password for the agent running on the Exchange server.</long_description>
+			<validation_rule>
+				<alphanumeric />
+			</validation_rule>
+			<error_message>
+				<alphanumeric>required field</alphanumeric>
+			</error_message>
+			<gui_type>
+				<password />
 			</gui_type>
 		</element>
 
@@ -66,8 +81,7 @@
 			<control_options>size:10</control_options>
 			<default_value></default_value>
 			<short_description>Password</short_description>
-			<long_description>On Windows monitoring station, the password is for the user on the Exchange server. On Linux
-				monitoring station, the password is for up.time Agent on the Exchange server.</long_description>
+			<long_description>(Only for Windows monitoring station) Enter the password is for the user on the Exchange server.</long_description>
 			<validation_rule>
 				<alphanumeric />
 			</validation_rule>
