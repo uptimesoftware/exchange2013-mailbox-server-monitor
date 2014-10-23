@@ -9,7 +9,15 @@ param (
 $securePw = ConvertTo-SecureString $password -AsPlainText -Force
 $psCred = New-Object System.Management.Automation.PSCredential($username,$securePw)
 
-#Create a new session with the Credential
+# Create a new session with the Credential
 $session = New-PSSession -ComputerName $remoteHost -Credential $psCred
 
-Invoke-Command -Session $session -FilePath "C:\uptime_scripts\exchange2013-mailbox-server.ps1"
+# Each plugin creates its folder inside uptime/plugins/java folder.
+$pluginName = "exchange2013-mailbox-server-monitor"
+# Find uptime folder in Program Files by using MIBDIRS environment variable.
+$MIBDIRS_path = $env:MIBDIRS
+$uptimeLocation = $MIBDIRS_path.Substring(0,$MIBDIRS_path.Length-4)
+# File path of scripts directory in uptime folder.
+$scriptLocation = "$uptimeLocation/plugins/java/$pluginName/scripts"
+
+Invoke-Command -Session $session -FilePath "$scriptLocation/exchange2013-mailbox-server.ps1"

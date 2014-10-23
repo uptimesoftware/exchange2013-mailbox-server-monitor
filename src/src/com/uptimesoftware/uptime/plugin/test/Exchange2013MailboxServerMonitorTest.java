@@ -17,22 +17,27 @@ import com.uptimesoftware.uptime.plugin.Exchange2013MailboxServerMonitor.UptimeE
 public class Exchange2013MailboxServerMonitorTest {
 
 	// Configure these private variables with your inputs. Default is 'null' not empty string "".
+	// When you don't need password make it null, not empty string ""
 	private static String hostname;
+	// Only for Windows monitoring station.
 	private static String domainName = ".\\";
-	private static String userName = "administrator";
-	// When you don't need password make it null, not empty string "".
-	private static int port = 9998;
-	// On Windows, the password is for remote Powershell script. On Linux, the password is for Up.time Agent.
+	private static String userName;
 	private static String password;
+	// Only for Linux monitoring station.
+	private static int port = 9998;
+	private static String agentPassword;
 
 	// constants
 	private static final String HOSTNAME = "hostname";
 	private static final String DOMAIN_NAME = "domainName";
 	private static final String USERNAME = "userName";
 	private static final String PORT = "port";
+	private static final String AGENT_PASSWORD = "agentPassword";
 	private static final String PASSWORD = "password";
 	private static final String VERSION = "ver";
-	private static final String SCRIPT_COMMAND_NAME = "ex2013mailbox";
+
+	// Agent command to run a Powershell script.
+	private final String agentCommandToRunScript = "ex2013mailbox";
 
 	// store params into this HashMap before testing begins.
 	private static HashMap<String, Object> params = new HashMap<String, Object>();
@@ -47,11 +52,14 @@ public class Exchange2013MailboxServerMonitorTest {
 		params.put(USERNAME, userName);
 		params.put(PORT, port);
 		params.put(PASSWORD, password);
+		params.put(AGENT_PASSWORD, agentPassword);
 	}
 
 	@Test
 	public void checkIfAgentIsRunningOnWindowsTest() {
-		assertTrue(invokeCheckIfAgentIsRunningOnWindows(params, VERSION));
+		if (SystemUtils.IS_OS_LINUX) {
+			assertTrue(invokeCheckIfAgentIsRunningOnWindows(params, VERSION));
+		}
 	}
 
 	@Test
@@ -60,13 +68,15 @@ public class Exchange2013MailboxServerMonitorTest {
 		outputList.add("MSExchange Delivery SmtpAvailability - % Availability");
 		outputList.add("MSExchange Delivery SmtpAvailability - % Failures Due To Back Pressure");
 		outputList.add("MSExchange Delivery SmtpAvailability - % Failures Due To TLS Errors");
-		outputList.add("MSExchange Delivery SmtpAvailability - Failures Due to Maximum Local Loop Count");
+		outputList
+				.add("MSExchange Delivery SmtpAvailability - Failures Due to Maximum Local Loop Count");
 		outputList.add("MSExchange RpcClientAccess - Connection Count");
 		outputList.add("MSExchange RpcClientAccess - Active User Count");
 		outputList.add("MSExchange RpcClientAccess - User Count");
 		outputList.add("MSExchange RpcClientAccess - RPC Dispatch Task Queue Length");
 		outputList.add("MSExchange RpcClientAccess - XTC Dispatch Task Queue Length");
-		outputList.add("MSExchange RpcClientAccess - RPCHttpConnectionRegistration Dispatch Task Queue Length");
+		outputList
+				.add("MSExchange RpcClientAccess - RPCHttpConnectionRegistration Dispatch Task Queue Length");
 		outputList.add("MSExchangeTransport Queues - Active Mailbox Delivery Queue Length");
 		outputList.add("MSExchangeTransport Queues - Submission Queue Length");
 		outputList.add("MSExchangeTransport Queues - Active Non-Smtp Delivery Queue Length");
@@ -78,11 +88,12 @@ public class Exchange2013MailboxServerMonitorTest {
 
 		String result = "";
 		if (SystemUtils.IS_OS_LINUX) {
-			result = invokeRunAgentCustomScript(params, SCRIPT_COMMAND_NAME);
+			result = invokeRunAgentCustomScript(params, agentCommandToRunScript);
 		} else if (SystemUtils.IS_OS_WINDOWS) {
 			result = invokeExecutePowershellScriptAgainstRemoteHost(params);
 		}
 
+		System.out.println(result);
 		assertFalse(result.equals(""));
 
 		JsonNode jsonNode = invokeConvertStringToJsonNode(result);
@@ -114,13 +125,14 @@ public class Exchange2013MailboxServerMonitorTest {
 	private String invokeRunAgentCustomScript(HashMap<String, Object> params, String cmd) {
 		String result = "";
 		try {
-			Method method = UptimeExchange2013MailboxServerMonitor.class.getDeclaredMethod("runAgentCustomScript",
-					HashMap.class, String.class);
+			Method method = UptimeExchange2013MailboxServerMonitor.class.getDeclaredMethod(
+					"runAgentCustomScript", HashMap.class, String.class);
 			method.setAccessible(true);
-			result = (String) method.invoke(UptimeExchange2013MailboxServerMonitor.class.newInstance(), new Object[] {
-					params, cmd });
-		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
-				| InvocationTargetException | InstantiationException e) {
+			result = (String) method.invoke(
+					UptimeExchange2013MailboxServerMonitor.class.newInstance(), new Object[] {
+							params, cmd });
+		} catch (NoSuchMethodException | SecurityException | IllegalAccessException
+				| IllegalArgumentException | InvocationTargetException | InstantiationException e) {
 			e.printStackTrace();
 		}
 		return result;
@@ -144,10 +156,11 @@ public class Exchange2013MailboxServerMonitorTest {
 			Method method = UptimeExchange2013MailboxServerMonitor.class.getDeclaredMethod(
 					"checkIfAgentIsRunningOnWindows", HashMap.class, String.class);
 			method.setAccessible(true);
-			gotResult = (boolean) method.invoke(UptimeExchange2013MailboxServerMonitor.class.newInstance(),
-					new Object[] { params, verb });
-		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
-				| InvocationTargetException | InstantiationException e) {
+			gotResult = (boolean) method.invoke(
+					UptimeExchange2013MailboxServerMonitor.class.newInstance(), new Object[] {
+							params, verb });
+		} catch (NoSuchMethodException | SecurityException | IllegalAccessException
+				| IllegalArgumentException | InvocationTargetException | InstantiationException e) {
 			e.printStackTrace();
 		}
 		return gotResult;
@@ -167,10 +180,11 @@ public class Exchange2013MailboxServerMonitorTest {
 			Method method = UptimeExchange2013MailboxServerMonitor.class.getDeclaredMethod(
 					"executePowershellScriptAgainstRemoteHost", HashMap.class);
 			method.setAccessible(true);
-			result = (String) method.invoke(UptimeExchange2013MailboxServerMonitor.class.newInstance(),
+			result = (String) method.invoke(
+					UptimeExchange2013MailboxServerMonitor.class.newInstance(),
 					new Object[] { params });
-		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
-				| InvocationTargetException | InstantiationException e) {
+		} catch (NoSuchMethodException | SecurityException | IllegalAccessException
+				| IllegalArgumentException | InvocationTargetException | InstantiationException e) {
 			e.printStackTrace();
 		}
 		return result;
@@ -186,13 +200,14 @@ public class Exchange2013MailboxServerMonitorTest {
 	private JsonNode invokeConvertStringToJsonNode(String jsonFormatResult) {
 		JsonNode jsonNode = null;
 		try {
-			Method method = UptimeExchange2013MailboxServerMonitor.class.getDeclaredMethod("convertStringToJsonNode",
-					String.class);
+			Method method = UptimeExchange2013MailboxServerMonitor.class.getDeclaredMethod(
+					"convertStringToJsonNode", String.class);
 			method.setAccessible(true);
-			jsonNode = (JsonNode) method.invoke(UptimeExchange2013MailboxServerMonitor.class.newInstance(),
+			jsonNode = (JsonNode) method.invoke(
+					UptimeExchange2013MailboxServerMonitor.class.newInstance(),
 					new Object[] { jsonFormatResult });
-		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
-				| InvocationTargetException | InstantiationException e) {
+		} catch (NoSuchMethodException | SecurityException | IllegalAccessException
+				| IllegalArgumentException | InvocationTargetException | InstantiationException e) {
 			e.printStackTrace();
 		}
 		return jsonNode;
@@ -210,13 +225,13 @@ public class Exchange2013MailboxServerMonitorTest {
 	private int invokeGetIntValueFromJsonNode(String fieldName, JsonNode jsonNode) {
 		int value = 0;
 		try {
-			Method method = UptimeExchange2013MailboxServerMonitor.class.getDeclaredMethod("getIntValueFromJsonNode",
-					String.class, JsonNode.class);
+			Method method = UptimeExchange2013MailboxServerMonitor.class.getDeclaredMethod(
+					"getIntValueFromJsonNode", String.class, JsonNode.class);
 			method.setAccessible(true);
-			value = (int) method.invoke(UptimeExchange2013MailboxServerMonitor.class.newInstance(), new Object[] {
-					fieldName, jsonNode });
-		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
-				| InvocationTargetException | InstantiationException e) {
+			value = (int) method.invoke(UptimeExchange2013MailboxServerMonitor.class.newInstance(),
+					new Object[] { fieldName, jsonNode });
+		} catch (NoSuchMethodException | SecurityException | IllegalAccessException
+				| IllegalArgumentException | InvocationTargetException | InstantiationException e) {
 			e.printStackTrace();
 		}
 		return value;

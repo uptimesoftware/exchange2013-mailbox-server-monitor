@@ -28,6 +28,7 @@
 			<zipfileset dir="classes" prefix="classes" />
 			<zipfileset dir="lib" prefix="lib" excludes="compile/**" />
 			<zipfileset dir="META-INF" prefix="classes/META-INF" />
+			<zipfileset dir="scripts" prefix="scripts" />
 		</zip>
 		<zip destfile="../dist/exchange2013-mailbox-server-monitor.zip">
 			<zipfileset dir="definition" />

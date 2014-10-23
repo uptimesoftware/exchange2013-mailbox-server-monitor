@@ -10,6 +10,8 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
+
 import org.apache.commons.lang.SystemUtils;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
@@ -54,17 +56,18 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 	@Extension
 	public static class UptimeExchange2013MailboxServerMonitor extends PluginMonitor {
 		// Logger object.
-		private static final Logger LOGGER = LoggerFactory.getLogger(UptimeExchange2013MailboxServerMonitor.class);
+		private static final Logger LOGGER = LoggerFactory
+				.getLogger(UptimeExchange2013MailboxServerMonitor.class);
 
 		// Constants.
 		private static final String HOSTNAME = "hostname";
 		private static final String DOMAIN_NAME = "domainName";
 		private static final String PORT = "port";
+		private static final String AGENT_PASSWORD = "agentPassword";
 		private static final String USERNAME = "userName";
 		private static final String PASSWORD = "password";
 		private static final String VERSION = "ver";
 		private static final String OS_TYPE_WINDOWS = "Windows";
-		private static final String SCRIPT_COMMAND_NAME = "ex2013mailbox";
 		private static final String JSON_ATTRIBUTE_RESULT = "result";
 		private static final int ERROR_CODE = -1;
 		private static final String AGENT_ERR = "ERR";
@@ -72,14 +75,22 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		// LinkedList to contain output fields' names.
 		private final LinkedList<String> outputList = new LinkedList<String>();
 
-		// See definition in .xml file for plugin. Each plugin has different
-		// number of input/output parameters.
-		// [Input]
+		// Agent command to run a Powershell script.
+		private final String agentCommandToRunScript = "ex2013mailbox";
+		// Powershell script to Invoke-Command (remote Powershell)
+		private final String remotePowershellScript = "remoteEx2013MailboxServer.ps1";
+		// Name of a plugin string to be used in file path of the above Powershell script.
+		private final String thePluginName = "exchange2013-mailbox-server-monitor";
+
+		// See definition in .xml file for plugin. Each plugin has different number of input/output
+		// parameters.
 		String hostname;
-		String domainName;
+		// Port and Agent Password are only for Linux monitoring station.
 		int port;
+		String agentPassword;
+		// Domain Name, User Name, and Password are only for Windows monitoring station.
+		String domainName;
 		String userName;
-		// On Windows, the password is for remote Powershell script. On Linux, the password is for Up.time Agent.
 		String password;
 
 		/**
@@ -96,21 +107,25 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 			hostname = params.getString(HOSTNAME);
 			domainName = params.getString(DOMAIN_NAME);
 			port = params.getInt(PORT);
+			agentPassword = params.getString(AGENT_PASSWORD);
 			userName = params.getString(USERNAME);
 			password = params.getString(PASSWORD);
 
 			// [Outputs] in ArrayList
 			outputList.add("MSExchange Assistants - Per Database - Events In Queue");
 			outputList.add("MSExchange Delivery SmtpAvailability - % Availability");
-			outputList.add("MSExchange Delivery SmtpAvailability - % Failures Due To Back Pressure");
+			outputList
+					.add("MSExchange Delivery SmtpAvailability - % Failures Due To Back Pressure");
 			outputList.add("MSExchange Delivery SmtpAvailability - % Failures Due To TLS Errors");
-			outputList.add("MSExchange Delivery SmtpAvailability - Failures Due to Maximum Local Loop Count");
+			outputList
+					.add("MSExchange Delivery SmtpAvailability - Failures Due to Maximum Local Loop Count");
 			outputList.add("MSExchange RpcClientAccess - Connection Count");
 			outputList.add("MSExchange RpcClientAccess - Active User Count");
 			outputList.add("MSExchange RpcClientAccess - User Count");
 			outputList.add("MSExchange RpcClientAccess - RPC Dispatch Task Queue Length");
 			outputList.add("MSExchange RpcClientAccess - XTC Dispatch Task Queue Length");
-			outputList.add("MSExchange RpcClientAccess - RPCHttpConnectionRegistration Dispatch Task Queue Length");
+			outputList
+					.add("MSExchange RpcClientAccess - RPCHttpConnectionRegistration Dispatch Task Queue Length");
 			outputList.add("MSExchangeTransport Queues - Active Mailbox Delivery Queue Length");
 			outputList.add("MSExchangeTransport Queues - Submission Queue Length");
 			outputList.add("MSExchangeTransport Queues - Active Non-Smtp Delivery Queue Length");
@@ -129,38 +144,64 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		public void monitor() {
 			HashMap<String, Object> params = new HashMap<String, Object>();
 			params.put(HOSTNAME, hostname);
+			if (domainName != null && !domainName.equals("")) {
+				domainName += "\\";
+			}
 			params.put(DOMAIN_NAME, domainName);
 			params.put(PORT, port);
+			params.put(AGENT_PASSWORD, agentPassword);
 			params.put(USERNAME, userName);
 			params.put(PASSWORD, password);
 
 			String jsonResult = "";
 			if (SystemUtils.IS_OS_LINUX) {
+				LOGGER.debug("Check if Password, Username, Domain Name are entered. If yes, error.");
+				if (!checkLinuxMonitoringStationInputs(params)) {
+					setStateAndMessage(MonitorState.UNKNOWN,
+							"Linux: Agent port and Agent password are required fields. "
+									+ "Please confirm both fields are defined.");
+					return;
+				}
+
 				LOGGER.debug("Check if Up.time Agent is running on a remote Windows host.");
 				if (!checkIfAgentIsRunningOnWindows(params, VERSION)) {
 					return;
 				}
 
 				LOGGER.debug("Send rexec command to Up.time Agent running on a remote Windows host.");
-				jsonResult = runAgentCustomScript(params, SCRIPT_COMMAND_NAME);
+				jsonResult = runAgentCustomScript(params, agentCommandToRunScript);
 
-				LOGGER.debug("Error handling : Check if Up.time Agent sent back ERR message");
-				if (jsonResult.equals(AGENT_ERR)) {
-					setStateAndMessage(MonitorState.UNKNOWN, "Agent sent back ERR. Check the rexec command.");
+				LOGGER.debug("Error handling : Check if Up.time Agent sent back ERR message or result is empty string.");
+				if (jsonResult.equals(AGENT_ERR) || jsonResult.equals("")) {
+					setStateAndMessage(MonitorState.UNKNOWN,
+							"Linux: Failed to communicate to the Agent on port. "
+									+ "Please confirm Agent port and Agent password are correct.");
 					return;
 				}
 
 				LOGGER.debug("Error handling : Check if Up.time Agent sent back JSON result.");
 				if (jsonResult == null | jsonResult.equals("")) {
-					setStateAndMessage(MonitorState.UNKNOWN, "Could not get JSON result from Up.time Agent");
+					setStateAndMessage(MonitorState.UNKNOWN,
+							"Could not get JSON result from Up.time Agent");
 					return;
 				}
 
 			} else if (SystemUtils.IS_OS_WINDOWS) {
-				LOGGER.debug("Execute Powershell script on a Windows monitoring station against a remote Windows host.");
+				LOGGER.debug("Check if Agent Password and Port are entered. If yes, error.");
+				if (!checkWindowsMonitoringStationInputs(params)) {
+					setStateAndMessage(MonitorState.UNKNOWN,
+							"Windows: Domain, Username and Password are required fields. "
+									+ "Please confirm all fields are defined.");
+					return;
+				}
+
+				LOGGER.debug("Execute Powershell script on a Windows monitoring station "
+						+ "against a remote Windows host.");
 				jsonResult = executePowershellScriptAgainstRemoteHost(params);
 				if (jsonResult == null | jsonResult.equals("")) {
-					setStateAndMessage(MonitorState.UNKNOWN, "Could not get JSON result from remote Powershell script.");
+					setStateAndMessage(MonitorState.UNKNOWN,
+							"Windows: Failed to authenticate using domain, username and password. "
+									+ "Please confirm values are correct.");
 					return;
 				}
 			}
@@ -170,7 +211,9 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 
 			LOGGER.debug("Error handling : Check if JsonNode object is null or not.");
 			if (jsonNode == null) {
-				setStateAndMessage(MonitorState.UNKNOWN, "Could not convert result String to JsonNode object");
+				setStateAndMessage(MonitorState.UNKNOWN,
+						"Could not convert result String to JsonNode object. "
+								+ "Check the result String is in JSON format.");
 				return;
 			}
 
@@ -181,7 +224,8 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 				outputParam = outputList.pop();
 				outputValue = getIntValueFromJsonNode(outputParam, jsonNode);
 				if (outputValue == ERROR_CODE) {
-					setStateAndMessage(MonitorState.UNKNOWN, "Unable to get int value of " + outputParam);
+					setStateAndMessage(MonitorState.UNKNOWN, "Unable to get int value of "
+							+ outputParam);
 					return;
 				} else {
 					addVariable(outputParam, outputValue);
@@ -210,14 +254,16 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 			}
 			nestedJsonNode = nestedJsonNode.get(fieldName);
 			if (nestedJsonNode == null) {
-				LOGGER.error("Could not find {} attribute within {} attribute", fieldName, JSON_ATTRIBUTE_RESULT);
+				LOGGER.error("Could not find {} attribute within {} attribute", fieldName,
+						JSON_ATTRIBUTE_RESULT);
 				return ERROR_CODE;
 			}
 			return Integer.parseInt(nestedJsonNode.getTextValue());
 		}
 
 		/**
-		 * Private helper function to convert result String in JSON format to JsonNode object. (3rd party library -
+		 * Private helper function to convert result String in JSON format to JsonNode object. (3rd
+		 * party library -
 		 * Jackson)
 		 * 
 		 * @param jsonFormatResult
@@ -257,10 +303,12 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 				setStateAndMessage(MonitorState.UNKNOWN, "Could not get OS info from Up.time Agent");
 				return false;
 			} else if (osType.equals(AGENT_ERR)) {
-				setStateAndMessage(MonitorState.UNKNOWN, "Agent sent back ERR. Check the ver command.");
+				setStateAndMessage(MonitorState.UNKNOWN,
+						"Agent sent back ERR. Check the ver command.");
 				return false;
 			} else if (!osType.contains(OS_TYPE_WINDOWS)) {
-				setStateAndMessage(MonitorState.UNKNOWN, "Exchange 2013 Mailbox Server plugin cannot run on Linux.");
+				setStateAndMessage(MonitorState.UNKNOWN,
+						"Exchange 2013 Mailbox Server plugin cannot run on Linux.");
 				return false;
 			}
 			return true;
@@ -276,7 +324,8 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		 * @return Response from a socket in String.
 		 */
 		private String runAgentCustomScript(HashMap<String, Object> params, String cmd) {
-			return sendCmdToAgent(params, "rexec " + (String) params.get(PASSWORD) + " " + cmd);
+			return sendCmdToAgent(params, "rexec " + (String) params.get(AGENT_PASSWORD) + " "
+					+ cmd);
 		}
 
 		/**
@@ -292,16 +341,18 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 			StringBuilder result = new StringBuilder();
 			// Try-with-resource statement will close socket and resources after completing a task.
 			try (Socket socket = new Socket((String) params.get(HOSTNAME), (int) params.get(PORT));
-					BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-					BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));) {
+					BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
+							socket.getOutputStream()));
+					BufferedReader in = new BufferedReader(new InputStreamReader(
+							socket.getInputStream()));) {
 				// Check if cmd is empty or not.
 				if (cmd.equals("") || cmd == null) {
 					LOGGER.error("{} is empty/null", cmd);
 				} else {
 					// Write the cmd on the connected socket.
 					out.write(cmd);
-					// Flush OutputStream after writing because there is no guarantee that the serialized representation
-					// will get sent to the other end.
+					// Flush OutputStream after writing because there is no guarantee that the
+					// serialized representation will get sent to the other end.
 					out.flush();
 				}
 				// Read line(s) from the connected socket.
@@ -327,17 +378,22 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		private String executePowershellScriptAgainstRemoteHost(HashMap<String, Object> params) {
 			StringBuilder result = new StringBuilder();
 			Process process = null;
+			String remotePowershellScriptPath = getRemotePowerShellScriptPath(
+					remotePowershellScript, thePluginName);
+
 			ArrayList<String> args = new ArrayList<String>();
 			args.add("Powershell.exe");
 			args.add("-Command");
 			// Put the Powershell scripts in some location and change this path args accordingly.
-			args.add("& C:\\uptime_scripts\\remoteEx2013MailboxServer.ps1 -remoteHost " + (String) params.get(HOSTNAME)
-					+ " -username " + (String) params.get(DOMAIN_NAME) + (String) params.get(USERNAME) + " -password "
-					+ (String) params.get(PASSWORD));
+			args.add("& " + remotePowershellScriptPath + " -remoteHost "
+					+ (String) params.get(HOSTNAME) + " -username "
+					+ (String) params.get(DOMAIN_NAME) + (String) params.get(USERNAME)
+					+ " -password " + (String) params.get(PASSWORD));
 			try {
 				ProcessBuilder pb = new ProcessBuilder(args);
 				process = pb.start();
-				BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+				BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
+						process.getInputStream()));
 				String line = "";
 				while ((line = bufferedReader.readLine()) != null) {
 					result.append(line);
@@ -348,6 +404,60 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 				LOGGER.error("Unable to get result from the process.", e);
 			}
 			return result.toString();
+		}
+
+		/**
+		 * Get file path to a given Powershell script (within uptime folder).
+		 * 
+		 * @param psScriptFileName
+		 *            Name of a given Powershell script.
+		 * @return File path to a given Powershell Script.
+		 */
+		private String getRemotePowerShellScriptPath(String psScriptFileName, String thePluginName) {
+			String uptimeFolder = "";
+			Map<String, String> env = System.getenv();
+			for (String envName : env.keySet()) {
+				uptimeFolder = env.get(envName);
+				// Environment variable named MIBDIRS contains path to uptime folder.
+				if (uptimeFolder.contains("uptime")) {
+					// get rid of 'mib\' part.
+					uptimeFolder = uptimeFolder.substring(0, uptimeFolder.length() - 4);
+					break;
+				}
+			}
+			uptimeFolder += "plugins/java/" + thePluginName + "/scripts/";
+
+			// Because Microsoft is so special, we now need to escape space character with back-tick
+			return uptimeFolder.contains(" ") ? uptimeFolder.replaceAll(" ", "` ")
+					+ psScriptFileName : uptimeFolder + psScriptFileName;
+		}
+
+		/**
+		 * Check if Agent Password and Agent Port are entered on Linux monitoring station.
+		 * 
+		 * @param params
+		 *            HashMap that contains input params.
+		 * @return True if Agent Password and Agent Port are entered on Linux monitoring station.
+		 */
+		private boolean checkLinuxMonitoringStationInputs(HashMap<String, Object> params) {
+			return params.get(AGENT_PASSWORD) != null
+					&& !((String) params.get(AGENT_PASSWORD)).equals("")
+					&& (params.get(PORT) != null || !((String) params.get(PORT)).equals(""));
+		}
+
+		/**
+		 * Check if Domain, Username, Password are entered on Windows monitoring station.
+		 * 
+		 * @param params
+		 *            HashMap that contains input params.
+		 * @return True if Domain, Username, Password are entered on Windows monitoring station.
+		 */
+		private boolean checkWindowsMonitoringStationInputs(HashMap<String, Object> params) {
+
+			return params.get(PASSWORD) != null && !((String) params.get(PASSWORD)).equals("")
+					&& params.get(USERNAME) != null && !((String) params.get(USERNAME)).equals("")
+					&& params.get(DOMAIN_NAME) != null
+					&& !((String) params.get(DOMAIN_NAME)).equals("");
 		}
 	}
 }
