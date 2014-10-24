@@ -12,6 +12,6 @@ b) ( Only for a Linux monitoring station ) :
  - Type ex2013mailbox in 'Command Name:' field.
  - Type cmd /c "cscript "C:\Program Files (x86)\uptime software\up.time agent\scripts\exchange2013-mailbox-server.vbs" //Nologo //T:0" in 'Path to script:' field.
  - Click Add/Edit and close and restart up.time Agent.
- - Copy and paste 'exchange2013-mailbox-server.vbs' file from 'https://github.com/uptimesoftware/exchange2013-mailbox-server-monitor/tree/master/src/scripts'
+ - Copy and paste 'exchange2013-mailbox-server.vbs' file from 'https://github.com/uptimesoftware/exchange2013-mailbox-server-monitor/tree/master/src/scripts' to 'C:\Program Files (x86)\uptime software\up.time agent\scripts'
 
 (feel free to add more details)
