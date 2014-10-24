@@ -4,10 +4,8 @@ exchange2013-mailbox-server-monitor
 For internal testing :
 
 a) ( Only for a Windows monitoring station ) Enable Powershell remoting :
-  - Run cmd as admin then run Powershell.exe on a target remote host.
-  - Execute 'Enable-PSRemoting'.
-  - Follow the instructions on cmd. (Typical yes-to-all steps.)
-  - Execute 'Set-Item wsman:localhost\client\trustedhosts -value *', so that all the local computers are trusted.
+  Follow 'Allow Powershell Remoting on the Remotehost' and 'Add Trusted Hosts on the Localcomputer' sections.
+  http://www.thomasmaurer.ch/2011/01/quick-powershell-remoting-guide/
 
 b) ( Only for a Linux monitoring station ) : 
  - Install an up.time Agent on a target Windows remote host.
