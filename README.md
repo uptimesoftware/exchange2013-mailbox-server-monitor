@@ -19,8 +19,12 @@ Commands from: http://www.thomasmaurer.ch/2011/01/quick-powershell-remoting-guid
 * Install an up.time Agent on a target Windows remote host.
 * Click 'Advanced option', then click 'Custom Scripts'.
 * Enter the follwing in the 'Command Name' field.
+
 > ex2013mailbox
+
 * Enter the following in the 'Path to script' field.
+
 > cmd /c "cscript "C:\Program Files (x86)\uptime software\up.time agent\scripts\exchange2013-mailbox-server.vbs" //Nologo //T:0"
+
 * Click Add/Edit and close and restart up.time Agent.
 * Copy and paste 'exchange2013-mailbox-server.vbs' file from 'https://github.com/uptimesoftware/exchange2013-mailbox-server-monitor/tree/master/src/scripts' to 'C:\Program Files (x86)\uptime software\up.time agent\scripts' folder.
