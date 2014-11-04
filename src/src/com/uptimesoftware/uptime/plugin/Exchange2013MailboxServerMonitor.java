@@ -144,9 +144,6 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		public void monitor() {
 			HashMap<String, Object> params = new HashMap<String, Object>();
 			params.put(HOSTNAME, hostname);
-			if (domainName != null && !domainName.isEmpty()) {
-				domainName += "\\";
-			}
 			params.put(DOMAIN_NAME, domainName);
 			params.put(PORT, port);
 			params.put(AGENT_PASSWORD, agentPassword);
