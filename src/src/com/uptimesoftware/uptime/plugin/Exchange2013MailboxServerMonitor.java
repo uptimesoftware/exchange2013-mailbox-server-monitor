@@ -86,7 +86,7 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		// parameters.
 		String hostname;
 		// Port and Agent Password are only for Linux monitoring station.
-		int port;
+		Integer port;
 		String agentPassword;
 		// Domain Name, User Name, and Password are only for Windows monitoring station.
 		String domainName;
@@ -106,7 +106,7 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 			// [Input]
 			hostname = params.getString(HOSTNAME);
 			domainName = params.getString(DOMAIN_NAME);
-			port = params.getInt(PORT);
+			port = params.getInteger(PORT);
 			agentPassword = params.getString(AGENT_PASSWORD);
 			userName = params.getString(USERNAME);
 			password = params.getString(PASSWORD);
@@ -144,7 +144,7 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		public void monitor() {
 			HashMap<String, Object> params = new HashMap<String, Object>();
 			params.put(HOSTNAME, hostname);
-			if (domainName != null && !domainName.equals("")) {
+			if (domainName != null && !domainName.isEmpty()) {
 				domainName += "\\";
 			}
 			params.put(DOMAIN_NAME, domainName);
@@ -155,7 +155,7 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 
 			String jsonResult = "";
 			if (SystemUtils.IS_OS_LINUX) {
-				LOGGER.debug("Check if Password, Username, Domain Name are entered. If yes, error.");
+				LOGGER.debug("Check if Agent Port, Agent Password are entered. If no, error.");
 				if (!checkLinuxMonitoringStationInputs(params)) {
 					setStateAndMessage(MonitorState.UNKNOWN,
 							"Linux: Agent port and Agent password are required fields. "
@@ -187,7 +187,7 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 				}
 
 			} else if (SystemUtils.IS_OS_WINDOWS) {
-				LOGGER.debug("Check if Agent Password and Port are entered. If yes, error.");
+				LOGGER.debug("Check if Password, Username are entered. If no, error.");
 				if (!checkWindowsMonitoringStationInputs(params)) {
 					setStateAndMessage(MonitorState.UNKNOWN,
 							"Windows: Domain, Username and Password are required fields. "
@@ -231,6 +231,27 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 					addVariable(outputParam, outputValue);
 				}
 			}
+
+			// Just testing. Delete it later.
+			ArrayList<String> args = new ArrayList<String>();
+			args.add("Powershell.exe");
+			// Prevent 32-bit / 64-bit Powershell security issue.
+			args.add("-ExecutionPolicy");
+			args.add("Unrestricted");
+			args.add("-Command");
+			// Put the Powershell scripts in some location and change this path args accordingly.
+			args.add("& " + getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
+					+ " -remoteHost " + (String) params.get(HOSTNAME) + " -username "
+					+ (String) params.get(DOMAIN_NAME) + (String) params.get(USERNAME)
+					+ " -password " + (String) params.get(PASSWORD));
+			for (String arg : args) {
+				addVariable("DEBUG_pscmd_arg", arg);
+			}
+			addVariable("DEBUG_hostname", (String) params.get(HOSTNAME));
+			addVariable("DEBUG_agent_port", (Integer) params.get(PORT));
+			addVariable("DEBUG_agent_password", (String) params.get(AGENT_PASSWORD));
+			addVariable("DEBUG_username", (String) params.get(USERNAME));
+			addVariable("DEBUG_password", (String) params.get(PASSWORD));
 
 			LOGGER.debug("Everything ran okay. Set monitor state to OK");
 			setStateAndMessage(MonitorState.OK, "Monitor successfully ran.");
@@ -383,6 +404,9 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 
 			ArrayList<String> args = new ArrayList<String>();
 			args.add("Powershell.exe");
+			// Prevent 32-bit / 64-bit Powershell security issue.
+			args.add("-ExecutionPolicy");
+			args.add("Unrestricted");
 			args.add("-Command");
 			// Put the Powershell scripts in some location and change this path args accordingly.
 			args.add("& " + remotePowershellScriptPath + " -remoteHost "
@@ -441,23 +465,20 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		 */
 		private boolean checkLinuxMonitoringStationInputs(HashMap<String, Object> params) {
 			return params.get(AGENT_PASSWORD) != null
-					&& !((String) params.get(AGENT_PASSWORD)).equals("")
-					&& (params.get(PORT) != null || !((String) params.get(PORT)).equals(""));
+					&& !((String) params.get(AGENT_PASSWORD)).isEmpty() && params.get(PORT) != null;
 		}
 
 		/**
-		 * Check if Domain, Username, Password are entered on Windows monitoring station.
+		 * Check if Username, Password are entered on Windows monitoring station.
 		 * 
 		 * @param params
 		 *            HashMap that contains input params.
-		 * @return True if Domain, Username, Password are entered on Windows monitoring station.
+		 * @return True if Username, Password are entered on Windows monitoring station.
 		 */
 		private boolean checkWindowsMonitoringStationInputs(HashMap<String, Object> params) {
 
-			return params.get(PASSWORD) != null && !((String) params.get(PASSWORD)).equals("")
-					&& params.get(USERNAME) != null && !((String) params.get(USERNAME)).equals("")
-					&& params.get(DOMAIN_NAME) != null
-					&& !((String) params.get(DOMAIN_NAME)).equals("");
+			return params.get(PASSWORD) != null && !((String) params.get(PASSWORD)).isEmpty()
+					&& params.get(USERNAME) != null && !((String) params.get(USERNAME)).isEmpty();
 		}
 	}
 }
