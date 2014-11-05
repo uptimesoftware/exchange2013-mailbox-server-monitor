@@ -56,42 +56,37 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 	@Extension
 	public static class UptimeExchange2013MailboxServerMonitor extends PluginMonitor {
 		// Logger object.
-		private static final Logger LOGGER = LoggerFactory
+		private static final Logger logger = LoggerFactory
 				.getLogger(UptimeExchange2013MailboxServerMonitor.class);
 
-		// Constants.
-		private static final String HOSTNAME = "hostname";
-		private static final String DOMAIN_NAME = "domainName";
-		private static final String PORT = "port";
-		private static final String AGENT_PASSWORD = "agentPassword";
-		private static final String USERNAME = "userName";
-		private static final String PASSWORD = "password";
-		private static final String VERSION = "ver";
-		private static final String OS_TYPE_WINDOWS = "Windows";
-		private static final String JSON_ATTRIBUTE_RESULT = "result";
-		private static final int ERROR_CODE = -1;
-		private static final String AGENT_ERR = "ERR";
+		// Inputs from Up.time.
+		HashMap<String, Object> inputs = new HashMap<String, Object>();
 
-		// LinkedList to contain output fields' names.
-		private final LinkedList<String> outputList = new LinkedList<String>();
+		// Input constants.
+		static final String HOSTNAME = "hostname";
+		static final String DOMAIN_NAME = "domainName";
+		static final String PORT = "port";
+		static final String AGENT_PASSWORD = "agentPassword";
+		static final String USERNAME = "userName";
+		static final String PASSWORD = "password";
+
+		// Non-input constants.
+		static final String AGENT_CMD_VER = "ver";
+		static final String OS_TYPE_WINDOWS = "Windows";
+		static final String JSON_ATTRIBUTE_RESULT = "result";
+		static final int ERROR_CODE = -1;
+		static final String AGENT_RESPONSE_ERR = "ERR";
 
 		// Agent command to run a Powershell script.
-		private final String agentCommandToRunScript = "ex2013mailbox";
+		static final String AGENT_CUSTOM_SCRIPT_CMD = "ex2013mailbox";
+
+		// LinkedList to contain output fields' names.
+		final LinkedList<String> outputList = new LinkedList<String>();
+
 		// Powershell script to Invoke-Command (remote Powershell)
 		private final String remotePowershellScript = "remoteEx2013MailboxServer.ps1";
 		// Name of a plugin string to be used in file path of the above Powershell script.
 		private final String thePluginName = "exchange2013-mailbox-server-monitor";
-
-		// See definition in .xml file for plugin. Each plugin has different number of input/output
-		// parameters.
-		String hostname;
-		// Port and Agent Password are only for Linux monitoring station.
-		Integer port;
-		String agentPassword;
-		// Domain Name, User Name, and Password are only for Windows monitoring station.
-		String domainName;
-		String userName;
-		String password;
 
 		/**
 		 * The setParameters function will accept a Parameters object containing
@@ -102,14 +97,15 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		 */
 		@Override
 		public void setParameters(Parameters params) {
-			LOGGER.debug("Step 1 : Setting parameters.");
-			// [Input]
-			hostname = params.getString(HOSTNAME);
-			domainName = params.getString(DOMAIN_NAME);
-			port = params.getInteger(PORT);
-			agentPassword = params.getString(AGENT_PASSWORD);
-			userName = params.getString(USERNAME);
-			password = params.getString(PASSWORD);
+			logger.debug("Step 1 : Get inputs from Up.time and store them in HashMap.");
+			// See definition in .xml file for plugin. Each plugin has different number of
+			// input/output parameters.
+			inputs.put(HOSTNAME, params.getString(HOSTNAME));
+			inputs.put(PORT, params.getInteger(PORT));
+			inputs.put(AGENT_PASSWORD, params.getString(AGENT_PASSWORD));
+			inputs.put(DOMAIN_NAME, params.getString(DOMAIN_NAME));
+			inputs.put(USERNAME, params.getString(USERNAME));
+			inputs.put(PASSWORD, params.getString(PASSWORD));
 
 			// [Outputs] in ArrayList
 			outputList.add("MSExchange Assistants - Per Database - Events In Queue");
@@ -142,79 +138,143 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		 */
 		@Override
 		public void monitor() {
-			HashMap<String, Object> params = new HashMap<String, Object>();
-			params.put(HOSTNAME, hostname);
-			params.put(DOMAIN_NAME, domainName);
-			params.put(PORT, port);
-			params.put(AGENT_PASSWORD, agentPassword);
-			params.put(USERNAME, userName);
-			params.put(PASSWORD, password);
-
 			String jsonResult = "";
 			if (SystemUtils.IS_OS_LINUX) {
-				LOGGER.debug("Check if Agent Port, Agent Password are entered. If no, error.");
-				if (!checkLinuxMonitoringStationInputs(params)) {
+				logger.debug("Check if Agent Port, Agent Password are entered. If no, error.");
+				if (!checkLinuxMonitoringStationInputs(inputs)) {
 					setStateAndMessage(MonitorState.UNKNOWN,
 							"Linux: Agent port and Agent password are required fields. "
 									+ "Please confirm both fields are defined.");
 					return;
 				}
 
-				LOGGER.debug("Check if Up.time Agent is running on a remote Windows host.");
-				if (!checkIfAgentIsRunningOnWindows(params, VERSION)) {
+				logger.debug("Check if Up.time Agent is running on a remote Windows host.");
+				if (!checkIfAgentIsRunningOnWindows(inputs, AGENT_CMD_VER)) {
 					return;
 				}
 
-				LOGGER.debug("Send rexec command to Up.time Agent running on a remote Windows host.");
-				jsonResult = runAgentCustomScript(params, agentCommandToRunScript);
+				logger.debug("Send rexec command to Up.time Agent running on a remote Windows host.");
+				jsonResult = runAgentCustomScript(inputs, AGENT_CUSTOM_SCRIPT_CMD);
 
-				LOGGER.debug("Error handling : Check if Up.time Agent sent back ERR message or result is empty string.");
-				if (jsonResult.equals(AGENT_ERR) || jsonResult.equals("")) {
+				logger.debug("Error handling : Check if Up.time Agent sent back ERR message or result is empty string.");
+				if (jsonResult.equals(AGENT_RESPONSE_ERR) || jsonResult.isEmpty()) {
 					setStateAndMessage(MonitorState.UNKNOWN,
 							"Linux: Failed to communicate to the Agent on port. "
 									+ "Please confirm Agent port and Agent password are correct.");
 					return;
 				}
 
-				LOGGER.debug("Error handling : Check if Up.time Agent sent back JSON result.");
-				if (jsonResult == null | jsonResult.equals("")) {
+				logger.debug("Error handling : Check if Up.time Agent sent back JSON result.");
+				if (jsonResult == null | jsonResult.isEmpty()) {
 					setStateAndMessage(MonitorState.UNKNOWN,
 							"Could not get JSON result from Up.time Agent");
 					return;
 				}
 
 			} else if (SystemUtils.IS_OS_WINDOWS) {
-				LOGGER.debug("Check if Password, Username are entered. If no, error.");
-				if (!checkWindowsMonitoringStationInputs(params)) {
+				logger.debug("Check if Password, Username are entered. If no, error.");
+				if (!checkWindowsMonitoringStationInputs(inputs)) {
 					setStateAndMessage(MonitorState.UNKNOWN,
 							"Windows: Domain, Username and Password are required fields. "
 									+ "Please confirm all fields are defined.");
+
+					// Just testing. Delete it later.
+					ArrayList<String> args = new ArrayList<String>();
+					args.add("Powershell.exe");
+					// Prevent 32-bit / 64-bit Powershell security issue.
+					args.add("-ExecutionPolicy");
+					args.add("Unrestricted");
+					args.add("-Command");
+					// Put the Powershell scripts in some location and change this path args
+					// accordingly.
+					args.add("& "
+							+ getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
+							+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
+							+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
+							+ " -password " + (String) inputs.get(PASSWORD));
+					for (String arg : args) {
+						addVariable("DEBUG_pscmd_arg", arg);
+					}
+					addVariable("DEBUG_hostname", (String) inputs.get(HOSTNAME));
+					addVariable("DEBUG_agent_port", (Integer) inputs.get(PORT));
+					addVariable("DEBUG_agent_password", (String) inputs.get(AGENT_PASSWORD));
+					addVariable("DEBUG_username", (String) inputs.get(USERNAME));
+					addVariable("DEBUG_password", (String) inputs.get(PASSWORD));
+
 					return;
 				}
 
-				LOGGER.debug("Execute Powershell script on a Windows monitoring station "
+				logger.debug("Execute Powershell script on a Windows monitoring station "
 						+ "against a remote Windows host.");
-				jsonResult = executePowershellScriptAgainstRemoteHost(params);
-				if (jsonResult == null | jsonResult.equals("")) {
+				jsonResult = executePowershellScriptAgainstRemoteHost(inputs);
+				if (jsonResult == null | jsonResult.isEmpty()) {
 					setStateAndMessage(MonitorState.UNKNOWN,
 							"Windows: Failed to authenticate using domain, username and password. "
 									+ "Please confirm values are correct.");
+
+					// Just testing. Delete it later.
+					ArrayList<String> args = new ArrayList<String>();
+					args.add("Powershell.exe");
+					// Prevent 32-bit / 64-bit Powershell security issue.
+					args.add("-ExecutionPolicy");
+					args.add("Unrestricted");
+					args.add("-Command");
+					// Put the Powershell scripts in some location and change this path args
+					// accordingly.
+					args.add("& "
+							+ getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
+							+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
+							+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
+							+ " -password " + (String) inputs.get(PASSWORD));
+					for (String arg : args) {
+						addVariable("DEBUG_pscmd_arg", arg);
+					}
+					addVariable("DEBUG_hostname", (String) inputs.get(HOSTNAME));
+					addVariable("DEBUG_agent_port", (Integer) inputs.get(PORT));
+					addVariable("DEBUG_agent_password", (String) inputs.get(AGENT_PASSWORD));
+					addVariable("DEBUG_username", (String) inputs.get(USERNAME));
+					addVariable("DEBUG_password", (String) inputs.get(PASSWORD));
+
 					return;
 				}
 			}
 
-			LOGGER.debug("Convert result String in JSON format to JsonNode object.");
+			logger.debug("Convert result String in JSON format to JsonNode object.");
 			JsonNode jsonNode = convertStringToJsonNode(jsonResult);
 
-			LOGGER.debug("Error handling : Check if JsonNode object is null or not.");
+			logger.debug("Error handling : Check if JsonNode object is null or not.");
 			if (jsonNode == null) {
 				setStateAndMessage(MonitorState.UNKNOWN,
 						"Could not convert result String to JsonNode object. "
 								+ "Check the result String is in JSON format.");
+
+				// Just testing. Delete it later.
+				ArrayList<String> args = new ArrayList<String>();
+				args.add("Powershell.exe");
+				// Prevent 32-bit / 64-bit Powershell security issue.
+				args.add("-ExecutionPolicy");
+				args.add("Unrestricted");
+				args.add("-Command");
+				// Put the Powershell scripts in some location and change this path args
+				// accordingly.
+				args.add("& "
+						+ getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
+						+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
+						+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
+						+ " -password " + (String) inputs.get(PASSWORD));
+				for (String arg : args) {
+					addVariable("DEBUG_pscmd_arg", arg);
+				}
+				addVariable("DEBUG_hostname", (String) inputs.get(HOSTNAME));
+				addVariable("DEBUG_agent_port", (Integer) inputs.get(PORT));
+				addVariable("DEBUG_agent_password", (String) inputs.get(AGENT_PASSWORD));
+				addVariable("DEBUG_username", (String) inputs.get(USERNAME));
+				addVariable("DEBUG_password", (String) inputs.get(PASSWORD));
+
 				return;
 			}
 
-			LOGGER.debug("Parse output values from JsonNode object.");
+			logger.debug("Parse output values from JsonNode object.");
 			int outputValue = 0;
 			String outputParam = "";
 			while (outputList.size() != 0) {
@@ -223,6 +283,30 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 				if (outputValue == ERROR_CODE) {
 					setStateAndMessage(MonitorState.UNKNOWN, "Unable to get int value of "
 							+ outputParam);
+
+					// Just testing. Delete it later.
+					ArrayList<String> args = new ArrayList<String>();
+					args.add("Powershell.exe");
+					// Prevent 32-bit / 64-bit Powershell security issue.
+					args.add("-ExecutionPolicy");
+					args.add("Unrestricted");
+					args.add("-Command");
+					// Put the Powershell scripts in some location and change this path args
+					// accordingly.
+					args.add("& "
+							+ getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
+							+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
+							+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
+							+ " -password " + (String) inputs.get(PASSWORD));
+					for (String arg : args) {
+						addVariable("DEBUG_pscmd_arg", arg);
+					}
+					addVariable("DEBUG_hostname", (String) inputs.get(HOSTNAME));
+					addVariable("DEBUG_agent_port", (Integer) inputs.get(PORT));
+					addVariable("DEBUG_agent_password", (String) inputs.get(AGENT_PASSWORD));
+					addVariable("DEBUG_username", (String) inputs.get(USERNAME));
+					addVariable("DEBUG_password", (String) inputs.get(PASSWORD));
+
 					return;
 				} else {
 					addVariable(outputParam, outputValue);
@@ -238,24 +322,23 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 			args.add("-Command");
 			// Put the Powershell scripts in some location and change this path args accordingly.
 			args.add("& " + getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
-					+ " -remoteHost " + (String) params.get(HOSTNAME) + " -username "
-					+ (String) params.get(DOMAIN_NAME) + (String) params.get(USERNAME)
-					+ " -password " + (String) params.get(PASSWORD));
+					+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
+					+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
+					+ " -password " + (String) inputs.get(PASSWORD));
 			for (String arg : args) {
 				addVariable("DEBUG_pscmd_arg", arg);
 			}
-			addVariable("DEBUG_hostname", (String) params.get(HOSTNAME));
-			addVariable("DEBUG_agent_port", (Integer) params.get(PORT));
-			addVariable("DEBUG_agent_password", (String) params.get(AGENT_PASSWORD));
-			addVariable("DEBUG_username", (String) params.get(USERNAME));
-			addVariable("DEBUG_password", (String) params.get(PASSWORD));
+			addVariable("DEBUG_hostname", (String) inputs.get(HOSTNAME));
+			addVariable("DEBUG_agent_port", (Integer) inputs.get(PORT));
+			addVariable("DEBUG_agent_password", (String) inputs.get(AGENT_PASSWORD));
+			addVariable("DEBUG_username", (String) inputs.get(USERNAME));
+			addVariable("DEBUG_password", (String) inputs.get(PASSWORD));
 
-			LOGGER.debug("Everything ran okay. Set monitor state to OK");
 			setStateAndMessage(MonitorState.OK, "Monitor successfully ran.");
 		}
 
 		/**
-		 * Private helper function to get int value of specified field.
+		 * Get int value of specified field.
 		 * 
 		 * @param fieldName
 		 *            Name of field that has int value.
@@ -263,16 +346,16 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		 *            JsonNode object containing all JSON nodes.
 		 * @return int value of specified field.
 		 */
-		private int getIntValueFromJsonNode(String fieldName, JsonNode nodeObject) {
+		int getIntValueFromJsonNode(String fieldName, JsonNode nodeObject) {
 			// Get nested JSON.
 			JsonNode nestedJsonNode = nodeObject.get(JSON_ATTRIBUTE_RESULT);
 			if (nestedJsonNode == null) {
-				LOGGER.error("Could not find {} attribute.", JSON_ATTRIBUTE_RESULT);
+				logger.error("Could not find {} attribute.", JSON_ATTRIBUTE_RESULT);
 				return ERROR_CODE;
 			}
 			nestedJsonNode = nestedJsonNode.get(fieldName);
 			if (nestedJsonNode == null) {
-				LOGGER.error("Could not find {} attribute within {} attribute", fieldName,
+				logger.error("Could not find {} attribute within {} attribute", fieldName,
 						JSON_ATTRIBUTE_RESULT);
 				return ERROR_CODE;
 			}
@@ -280,15 +363,13 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		}
 
 		/**
-		 * Private helper function to convert result String in JSON format to JsonNode object. (3rd
-		 * party library -
-		 * Jackson)
+		 * Convert result String in JSON format to JsonNode object.
 		 * 
 		 * @param jsonFormatResult
 		 *            Result String in JSON format.
 		 * @return JsonNode object containing all JSON nodes.
 		 */
-		private JsonNode convertStringToJsonNode(String jsonFormatResult) {
+		JsonNode convertStringToJsonNode(String jsonFormatResult) {
 			ObjectMapper mapper = new ObjectMapper();
 			JsonFactory factory = mapper.getJsonFactory();
 			JsonParser JSONParser = null;
@@ -297,10 +378,10 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 				JSONParser = factory.createJsonParser(jsonFormatResult);
 				nodeObject = mapper.readTree(JSONParser);
 			} catch (IOException e) {
-				LOGGER.error("Error while reading JSON tree", e);
+				logger.error("Error while reading JSON tree", e);
 			}
 			if (nodeObject == null) {
-				LOGGER.error("Converting did not complete successfully.");
+				logger.error("Converting did not complete successfully.");
 			}
 			return nodeObject;
 		}
@@ -308,64 +389,65 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		/**
 		 * Check if Up.time Agent is running on Windows.
 		 * 
-		 * @param params
+		 * @param inputs
 		 *            HashMap that contains input params.
 		 * @param verb
 		 *            Up.time Agent verb.
 		 * @return True if Up.time Agent is running on Windows, false otherwise.
 		 */
-		private boolean checkIfAgentIsRunningOnWindows(HashMap<String, Object> params, String verb) {
-			LOGGER.debug("Send a command to Up.time Agent and get a name of OS.");
-			String osType = sendCmdToAgent(params, verb);
-			if (osType == null || osType.equals("")) {
+		boolean checkIfAgentIsRunningOnWindows(HashMap<String, Object> inputs, String verb) {
+			logger.debug("Send a command to Up.time Agent and get a name of OS.");
+			String osType = sendCmdToAgent(inputs, verb);
+			if (osType == null || osType.isEmpty()) {
 				setStateAndMessage(MonitorState.UNKNOWN, "Could not get OS info from Up.time Agent");
 				return false;
-			} else if (osType.equals(AGENT_ERR)) {
+			} else if (osType.equals(AGENT_RESPONSE_ERR)) {
 				setStateAndMessage(MonitorState.UNKNOWN,
 						"Agent sent back ERR. Check the ver command.");
 				return false;
 			} else if (!osType.contains(OS_TYPE_WINDOWS)) {
 				setStateAndMessage(MonitorState.UNKNOWN,
-						"Exchange 2013 Mailbox Server plugin cannot run on Linux.");
+						"Exchange 2013 Mailbox Server plugin requires Up.time Agent to be on remote Windows host.");
 				return false;
 			}
 			return true;
 		}
 
 		/**
-		 * Private helper function to run a custom script on remote Windows host.
+		 * Run a custom script on remote Windows host.
 		 * 
-		 * @param params
+		 * @param inputs
 		 *            HashMap that contains input params.
 		 * @param cmd
 		 *            Command to run a custom script on Windows
 		 * @return Response from a socket in String.
 		 */
-		private String runAgentCustomScript(HashMap<String, Object> params, String cmd) {
-			return sendCmdToAgent(params, "rexec " + (String) params.get(AGENT_PASSWORD) + " "
+		String runAgentCustomScript(HashMap<String, Object> inputs, String cmd) {
+			return sendCmdToAgent(inputs, "rexec " + (String) inputs.get(AGENT_PASSWORD) + " "
 					+ cmd);
 		}
 
 		/**
-		 * Private helper function to open a socket and write to & read from the open socket.
+		 * Open a socket and write to & read from the open socket.
 		 * 
-		 * @param params
+		 * @param inputs
 		 *            HashMap that contains input params.
 		 * @param cmd
 		 *            Command to write to a open socket
 		 * @return Response from a socket in String.
 		 */
-		private String sendCmdToAgent(HashMap<String, Object> params, String cmd) {
+		private String sendCmdToAgent(HashMap<String, Object> inputs, String cmd) {
 			StringBuilder result = new StringBuilder();
 			// Try-with-resource statement will close socket and resources after completing a task.
-			try (Socket socket = new Socket((String) params.get(HOSTNAME), (int) params.get(PORT));
+			try (Socket socket = new Socket((String) inputs.get(HOSTNAME),
+					(Integer) inputs.get(PORT));
 					BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
 							socket.getOutputStream()));
 					BufferedReader in = new BufferedReader(new InputStreamReader(
 							socket.getInputStream()));) {
 				// Check if cmd is empty or not.
-				if (cmd.equals("") || cmd == null) {
-					LOGGER.error("{} is empty/null", cmd);
+				if (cmd.isEmpty() || cmd == null) {
+					logger.error("{} is empty/null", cmd);
 				} else {
 					// Write the cmd on the connected socket.
 					out.write(cmd);
@@ -379,9 +461,9 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 					result.append(line);
 				}
 			} catch (UnknownHostException e) {
-				LOGGER.error("Unable to open a socket.", e);
+				logger.error("Unable to open a socket.", e);
 			} catch (IOException e) {
-				LOGGER.error("Unable to get I/O of socket.", e);
+				logger.error("Unable to get I/O of socket.", e);
 			}
 			return result.toString();
 		}
@@ -389,11 +471,11 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		/**
 		 * Create a new process and execute a Powershell script against remote Windows host.
 		 * 
-		 * @param params
+		 * @param inputs
 		 *            HashMap that contains input params.
 		 * @return Response from the process in String.
 		 */
-		private String executePowershellScriptAgainstRemoteHost(HashMap<String, Object> params) {
+		String executePowershellScriptAgainstRemoteHost(HashMap<String, Object> inputs) {
 			StringBuilder result = new StringBuilder();
 			Process process = null;
 			String remotePowershellScriptPath = getRemotePowerShellScriptPath(
@@ -407,9 +489,9 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 			args.add("-Command");
 			// Put the Powershell scripts in some location and change this path args accordingly.
 			args.add("& " + remotePowershellScriptPath + " -remoteHost "
-					+ (String) params.get(HOSTNAME) + " -username "
-					+ (String) params.get(DOMAIN_NAME) + (String) params.get(USERNAME)
-					+ " -password " + (String) params.get(PASSWORD));
+					+ (String) inputs.get(HOSTNAME) + " -username "
+					+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
+					+ " -password " + (String) inputs.get(PASSWORD));
 			try {
 				ProcessBuilder pb = new ProcessBuilder(args);
 				process = pb.start();
@@ -422,7 +504,7 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 				process.waitFor();
 				process.destroy();
 			} catch (IOException | InterruptedException e) {
-				LOGGER.error("Unable to get result from the process.", e);
+				logger.error("Unable to get result from the process.", e);
 			}
 			return result.toString();
 		}
@@ -434,7 +516,7 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		 *            Name of a given Powershell script.
 		 * @return File path to a given Powershell Script.
 		 */
-		private String getRemotePowerShellScriptPath(String psScriptFileName, String thePluginName) {
+		String getRemotePowerShellScriptPath(String psScriptFileName, String thePluginName) {
 			String uptimeFolder = "";
 			Map<String, String> env = System.getenv();
 			for (String envName : env.keySet()) {
@@ -456,26 +538,25 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 		/**
 		 * Check if Agent Password and Agent Port are entered on Linux monitoring station.
 		 * 
-		 * @param params
+		 * @param inputs
 		 *            HashMap that contains input params.
 		 * @return True if Agent Password and Agent Port are entered on Linux monitoring station.
 		 */
-		private boolean checkLinuxMonitoringStationInputs(HashMap<String, Object> params) {
-			return params.get(AGENT_PASSWORD) != null
-					&& !((String) params.get(AGENT_PASSWORD)).isEmpty() && params.get(PORT) != null;
+		boolean checkLinuxMonitoringStationInputs(HashMap<String, Object> inputs) {
+			return inputs.get(AGENT_PASSWORD) != null
+					&& !((String) inputs.get(AGENT_PASSWORD)).isEmpty() && inputs.get(PORT) != null;
 		}
 
 		/**
 		 * Check if Username, Password are entered on Windows monitoring station.
 		 * 
-		 * @param params
+		 * @param inputs
 		 *            HashMap that contains input params.
 		 * @return True if Username, Password are entered on Windows monitoring station.
 		 */
-		private boolean checkWindowsMonitoringStationInputs(HashMap<String, Object> params) {
-
-			return params.get(PASSWORD) != null && !((String) params.get(PASSWORD)).isEmpty()
-					&& params.get(USERNAME) != null && !((String) params.get(USERNAME)).isEmpty();
+		boolean checkWindowsMonitoringStationInputs(HashMap<String, Object> inputs) {
+			return inputs.get(PASSWORD) != null && !((String) inputs.get(PASSWORD)).isEmpty()
+					&& inputs.get(USERNAME) != null && !((String) inputs.get(USERNAME)).isEmpty();
 		}
 	}
 }

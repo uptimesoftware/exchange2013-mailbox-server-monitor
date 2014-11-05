@@ -5,7 +5,7 @@
 
 	<class>Exchange 2013 Mailbox Server</class>
 	<exec>JAVA_PLUGIN:UptimeExchange2013MailboxServerMonitor</exec>
-	<erdc_version>1.01</erdc_version>
+	<erdc_version>1.02</erdc_version>
 	<category>Applications - Email</category>
 	<category_related>Applications - General</category_related>
 	<grid_info>
