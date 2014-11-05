@@ -187,11 +187,22 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 					args.add("-Command");
 					// Put the Powershell scripts in some location and change this path args
 					// accordingly.
-					args.add("& "
-							+ getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
-							+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
-							+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
-							+ " -password " + (String) inputs.get(PASSWORD));
+					if (inputs.get(DOMAIN_NAME) != null) {
+						args.add("& "
+								+ getRemotePowerShellScriptPath(remotePowershellScript,
+										thePluginName) + " -remoteHost "
+								+ (String) inputs.get(HOSTNAME) + " -username "
+								+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
+								+ " -password " + (String) inputs.get(PASSWORD));
+					} else {
+						args.add("& "
+								+ getRemotePowerShellScriptPath(remotePowershellScript,
+										thePluginName) + " -remoteHost "
+								+ (String) inputs.get(HOSTNAME) + " -username "
+								+ (String) inputs.get(USERNAME) + " -password "
+								+ (String) inputs.get(PASSWORD));
+					}
+
 					for (String arg : args) {
 						addVariable("DEBUG_pscmd_arg", arg);
 					}
@@ -221,11 +232,21 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 					args.add("-Command");
 					// Put the Powershell scripts in some location and change this path args
 					// accordingly.
-					args.add("& "
-							+ getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
-							+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
-							+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
-							+ " -password " + (String) inputs.get(PASSWORD));
+					if (inputs.get(DOMAIN_NAME) != null) {
+						args.add("& "
+								+ getRemotePowerShellScriptPath(remotePowershellScript,
+										thePluginName) + " -remoteHost "
+								+ (String) inputs.get(HOSTNAME) + " -username "
+								+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
+								+ " -password " + (String) inputs.get(PASSWORD));
+					} else {
+						args.add("& "
+								+ getRemotePowerShellScriptPath(remotePowershellScript,
+										thePluginName) + " -remoteHost "
+								+ (String) inputs.get(HOSTNAME) + " -username "
+								+ (String) inputs.get(USERNAME) + " -password "
+								+ (String) inputs.get(PASSWORD));
+					}
 					for (String arg : args) {
 						addVariable("DEBUG_pscmd_arg", arg);
 					}
@@ -257,11 +278,19 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 				args.add("-Command");
 				// Put the Powershell scripts in some location and change this path args
 				// accordingly.
-				args.add("& "
-						+ getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
-						+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
-						+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
-						+ " -password " + (String) inputs.get(PASSWORD));
+				if (inputs.get(DOMAIN_NAME) != null) {
+					args.add("& "
+							+ getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
+							+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
+							+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
+							+ " -password " + (String) inputs.get(PASSWORD));
+				} else {
+					args.add("& "
+							+ getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
+							+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
+							+ (String) inputs.get(USERNAME) + " -password "
+							+ (String) inputs.get(PASSWORD));
+				}
 				for (String arg : args) {
 					addVariable("DEBUG_pscmd_arg", arg);
 				}
@@ -293,11 +322,21 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 					args.add("-Command");
 					// Put the Powershell scripts in some location and change this path args
 					// accordingly.
-					args.add("& "
-							+ getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
-							+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
-							+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
-							+ " -password " + (String) inputs.get(PASSWORD));
+					if (inputs.get(DOMAIN_NAME) != null) {
+						args.add("& "
+								+ getRemotePowerShellScriptPath(remotePowershellScript,
+										thePluginName) + " -remoteHost "
+								+ (String) inputs.get(HOSTNAME) + " -username "
+								+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
+								+ " -password " + (String) inputs.get(PASSWORD));
+					} else {
+						args.add("& "
+								+ getRemotePowerShellScriptPath(remotePowershellScript,
+										thePluginName) + " -remoteHost "
+								+ (String) inputs.get(HOSTNAME) + " -username "
+								+ (String) inputs.get(USERNAME) + " -password "
+								+ (String) inputs.get(PASSWORD));
+					}
 					for (String arg : args) {
 						addVariable("DEBUG_pscmd_arg", arg);
 					}
@@ -321,10 +360,19 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 			args.add("Unrestricted");
 			args.add("-Command");
 			// Put the Powershell scripts in some location and change this path args accordingly.
-			args.add("& " + getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
-					+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
-					+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
-					+ " -password " + (String) inputs.get(PASSWORD));
+			if (inputs.get(DOMAIN_NAME) != null) {
+				args.add("& "
+						+ getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
+						+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
+						+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
+						+ " -password " + (String) inputs.get(PASSWORD));
+			} else {
+				args.add("& "
+						+ getRemotePowerShellScriptPath(remotePowershellScript, thePluginName)
+						+ " -remoteHost " + (String) inputs.get(HOSTNAME) + " -username "
+						+ (String) inputs.get(USERNAME) + " -password "
+						+ (String) inputs.get(PASSWORD));
+			}
 			for (String arg : args) {
 				addVariable("DEBUG_pscmd_arg", arg);
 			}
@@ -488,10 +536,17 @@ public class Exchange2013MailboxServerMonitor extends Plugin {
 			args.add("Unrestricted");
 			args.add("-Command");
 			// Put the Powershell scripts in some location and change this path args accordingly.
-			args.add("& " + remotePowershellScriptPath + " -remoteHost "
-					+ (String) inputs.get(HOSTNAME) + " -username "
-					+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
-					+ " -password " + (String) inputs.get(PASSWORD));
+			if (inputs.get(DOMAIN_NAME) != null) {
+				args.add("& " + remotePowershellScriptPath + " -remoteHost "
+						+ (String) inputs.get(HOSTNAME) + " -username "
+						+ (String) inputs.get(DOMAIN_NAME) + (String) inputs.get(USERNAME)
+						+ " -password " + (String) inputs.get(PASSWORD));
+			} else {
+				args.add("& " + remotePowershellScriptPath + " -remoteHost "
+						+ (String) inputs.get(HOSTNAME) + " -username "
+						+ (String) inputs.get(USERNAME) + " -password "
+						+ (String) inputs.get(PASSWORD));
+			}
 			try {
 				ProcessBuilder pb = new ProcessBuilder(args);
 				process = pb.start();
